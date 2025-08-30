@@ -1,0 +1,173 @@
+CREATE DATABASE `south_property_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE `south_property_db`;
+
+CREATE TABLE `users` (
+  `user_id` VARCHAR(255) PRIMARY KEY,
+  `username` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `title_th` ENUM('นาย','นางสาว','นาง'),
+  `first_name_th` VARCHAR(255),
+  `last_name_th` VARCHAR(255),
+  `title_en` ENUM('Mr.','Ms.','Mrs.'),
+  `first_name_en` VARCHAR(255),
+  `last_name_en` VARCHAR(255),
+  `telephone` VARCHAR(20),
+  `avatar_url` VARCHAR(2048),
+  `birth_date` DATE,
+  `cid_hash` CHAR(64) UNIQUE NOT NULL,
+  `email` VARCHAR(255) UNIQUE NOT NULL,
+  `line` VARCHAR(255) UNIQUE,
+  `verify_status` ENUM('verified','pending','unverified'),
+  `remark` TEXT,
+  `created_at` DATETIME DEFAULT now(),
+  `updated_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `scopes` (
+  `scope_id` VARCHAR(255) PRIMARY KEY,
+  `scope_name` VARCHAR(255),
+  `created_at` DATETIME DEFAULT now(),
+  `updated_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `user_scopes` (
+  `user_id` VARCHAR(255),
+  `scope_id` VARCHAR(255),
+  `level` INT,
+  `created_at` DATETIME DEFAULT now(),
+  `updated_at` DATETIME,
+  `deleted_at` DATETIME,
+  PRIMARY KEY (`user_id`, `scope_id`)
+);
+
+CREATE TABLE `posters` (
+  `post_id` VARCHAR(255) PRIMARY KEY,
+  `user_id` VARCHAR(255),
+  `remark` TEXT,
+  `title` VARCHAR(255),
+  `description` TEXT,
+  `post_type` ENUM('sale','rent'),
+  `property_type` ENUM('house','condo','land','other'),
+  `price` DECIMAL(15,2),
+  `status` ENUM('active','inactive','sold'),
+  `boost_date` DATETIME,
+  `land_area` DECIMAL(15,2),
+  `feasibility` TEXT,
+  `latitude` DECIMAL(10,7),
+  `longitude` DECIMAL(10,7),
+  `bed_room` TINYINT,
+  `bath_room` TINYINT,
+  `kitchen_room` TINYINT,
+  `expire_date` DATETIME,
+  `viewer` INT DEFAULT 0,
+  `landmark_id` VARCHAR(255),
+  `created_at` DATETIME DEFAULT now(),
+  `updated_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `landmarks` (
+  `landmark_id` VARCHAR(255) PRIMARY KEY,
+  `post_id` VARCHAR(255),
+  `name` VARCHAR(255),
+  `distance_km` DECIMAL(10,2),
+  `latitude` DECIMAL(10,7),
+  `longitude` DECIMAL(10,7),
+  `created_at` DATETIME DEFAULT now(),
+  `updated_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `post_image` (
+  `image_id` VARCHAR(255) PRIMARY KEY,
+  `post_id` VARCHAR(255),
+  `name` TEXT,
+  `image_url` TEXT,
+  `created_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `post_likes` (
+  `user_id` VARCHAR(255),
+  `post_id` VARCHAR(255),
+  `created_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME,
+  PRIMARY KEY (`user_id`, `post_id`)
+);
+
+CREATE TABLE `post_boosts` (
+  `boost_id` VARCHAR(255) PRIMARY KEY,
+  `post_id` VARCHAR(255),
+  `user_id` VARCHAR(255),
+  `start_date` DATETIME,
+  `end_date` DATETIME,
+  `status` ENUM('active','expire','cancelled'),
+  `created_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME
+);
+
+CREATE TABLE `user_change_logs` (
+  `log_id` VARCHAR(255) PRIMARY KEY,
+  `user_id` VARCHAR(255),
+  `changed_field` VARCHAR(255),
+  `old_value` TEXT,
+  `new_value` TEXT,
+  `updated_at` DATETIME
+);
+
+CREATE TABLE `messages_logs` (
+  `message_id` VARCHAR(255) PRIMARY KEY,
+  `sender_id` VARCHAR(255),
+  `receiver_id` VARCHAR(255),
+  `message_text` TEXT,
+  `sent_at` DATETIME DEFAULT now()
+);
+
+CREATE TABLE `book_logs` (
+  `book_id` VARCHAR(255) PRIMARY KEY,
+  `user_id` VARCHAR(255),
+  `post_id` VARCHAR(255),
+  `book_date` DATETIME,
+  `created_at` DATETIME DEFAULT now(),
+  `deleted_at` DATETIME,
+  `updated_at` DATETIME
+);
+
+CREATE TABLE `wallets` (
+  `wallet_id` VARCHAR(255) PRIMARY KEY,
+  `user_id` VARCHAR(255) UNIQUE,
+  `balance` DECIMAL(15,2) DEFAULT 0,
+  `updated_at` DATETIME DEFAULT now()
+);
+
+CREATE TABLE `wallet_transactions` (
+  `transaction_id` VARCHAR(255) PRIMARY KEY,
+  `wallet_id` VARCHAR(255),
+  `user_id` VARCHAR(255),
+  `amount` DECIMAL(15,2) NOT NULL,
+  `transaction_type` ENUM('topup','post','boost','refund') NOT NULL,
+  `mean_detail` ENUM('เติมเงิน','ใช้เงินเพื่อโพสต์ประกาศ','ใช้เงินเพื่อดันประกาศ','เงินคืน') NOT NULL,
+  `description` TEXT,
+  `created_at` DATETIME DEFAULT now()
+);
+
+ALTER TABLE `user_scopes` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `user_scopes` ADD FOREIGN KEY (`scope_id`) REFERENCES `scopes` (`scope_id`);
+ALTER TABLE `posters` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `landmarks` ADD FOREIGN KEY (`post_id`) REFERENCES `posters` (`post_id`);
+ALTER TABLE `post_image` ADD FOREIGN KEY (`post_id`) REFERENCES `posters` (`post_id`);
+ALTER TABLE `post_likes` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `post_likes` ADD FOREIGN KEY (`post_id`) REFERENCES `posters` (`post_id`);
+ALTER TABLE `post_boosts` ADD FOREIGN KEY (`post_id`) REFERENCES `posters` (`post_id`);
+ALTER TABLE `post_boosts` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `user_change_logs` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `messages_logs` ADD FOREIGN KEY (`sender_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `messages_logs` ADD FOREIGN KEY (`receiver_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `book_logs` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `book_logs` ADD FOREIGN KEY (`post_id`) REFERENCES `posters` (`post_id`);
+ALTER TABLE `wallets` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+ALTER TABLE `wallet_transactions` ADD FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`wallet_id`);
+ALTER TABLE `wallet_transactions` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
